@@ -2,6 +2,9 @@ package codecrafters_http_server
 
 import java.io.IOException
 import java.net.ServerSocket
+import java.io.InputStream
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 object Main extends App {
   // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -12,8 +15,25 @@ object Main extends App {
 
     serverSocket.setReuseAddress(true)
 
-    serverSocket.accept()
-    println("accepted new connection")
+    val clientSocket = serverSocket.accept()
+
+    println(
+      s"accepted new connection from ${clientSocket.getChannel()}:${clientSocket.getPort()}"
+    )
+    val inputStream = clientSocket.getInputStream()
+    val reader = new BufferedReader(new InputStreamReader(inputStream))
+
+    val request = reader.readLine()
+
+    println(s"request: $request")
+
+    val outputStream = clientSocket.getOutputStream()
+
+    val httpVersion = "HTTP/1.1"
+    val status = "200 OK"
+    val CRLF = "\r\n"
+    outputStream.write(s"$httpVersion $status$CRLF$CRLF".getBytes())
+
   } catch {
     case e: IOException =>
       println(s"IOException: ${e.getMessage}")
