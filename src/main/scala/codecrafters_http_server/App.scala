@@ -6,9 +6,8 @@ import java.io.InputStream
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-object Main extends App {
-  // You can use print statements as follows for debugging, they'll be visible when running tests.
-  System.err.println("Logs from your program will appear here!")
+@main def main(): Unit = {
+  val CRLF = "\r\n"
 
   try {
     val serverSocket = new ServerSocket(4221)
@@ -23,17 +22,21 @@ object Main extends App {
     val inputStream = clientSocket.getInputStream()
     val reader = new BufferedReader(new InputStreamReader(inputStream))
 
-    val request = reader.readLine()
+    val request = Iterator.continually(reader.readLine())
+      .takeWhile(it => it != null && it.nonEmpty)
+      .toList
 
-    println(s"request: $request")
+    val Array(verb, path, httpVersion) = request.head.split(" ")
+
+    val headers = request.drop(1)
+    println(s"Headers: $headers")
 
     val outputStream = clientSocket.getOutputStream()
 
-    val httpVersion = "HTTP/1.1"
-    val status = "200 OK"
-    val CRLF = "\r\n"
-    outputStream.write(s"$httpVersion $status$CRLF$CRLF".getBytes())
+    val supportedPath = "/"
+    val status = if (path == supportedPath) "200 OK" else "404 Not Found"
 
+    outputStream.write(s"$httpVersion $status$CRLF$CRLF".getBytes())
   } catch {
     case e: IOException =>
       println(s"IOException: ${e.getMessage}")
