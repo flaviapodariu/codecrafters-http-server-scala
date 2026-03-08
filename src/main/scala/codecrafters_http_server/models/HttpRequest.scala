@@ -42,7 +42,7 @@ object HttpRequest:
       .drop(1)
       .map(h => h.split(":", 2))
       .collect { case Array(k, v) =>
-        RequestHeader.fromString(k.toLowerCase()) -> v
+        RequestHeader.fromString(k.toLowerCase()) -> v.strip()
       }
       .toMap
 
