@@ -1,17 +1,18 @@
-package codecrafters_http_server
+package codecrafters_http_server.models
+import codecrafters_http_server.models.RepresentationHeader
 
 val CRLF = "\r\n"
 
 case class HttpResponse(
     status: StatusCode,
-    headers: Map[HttpHeader, String] = Map.empty,
+    headers: Map[RepresentationHeader, String] = Map.empty,
     body: String = ""
 ) {
-  def buildHeaders(): Map[HttpHeader, String] =
+  def buildHeaders(): Map[RepresentationHeader, String] =
     if (body.nonEmpty) {
       headers + (
-        HttpHeader.CONTENT_TYPE -> "text/plain",
-        HttpHeader.CONTENT_LENGTH -> body.length.toString
+        RepresentationHeader.CONTENT_TYPE -> "text/plain",
+        RepresentationHeader.CONTENT_LENGTH -> body.length.toString
       )
     } else headers
 
@@ -28,8 +29,3 @@ opaque type StatusCode = String
 object StatusCode:
   val OK: StatusCode = "200 OK"
   val NOT_FOUND: StatusCode = "404 Not Found"
-
-opaque type HttpHeader = String
-object HttpHeader:
-  val CONTENT_TYPE: HttpHeader = "Content-Type"
-  val CONTENT_LENGTH: HttpHeader = "Content-Length"

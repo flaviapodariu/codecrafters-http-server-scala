@@ -5,7 +5,13 @@ import java.net.ServerSocket
 import java.io.InputStream
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import codecrafters_http_server.StatusCode.OK
+import codecrafters_http_server.models.StatusCode
+import codecrafters_http_server.models.HttpResponse
+import codecrafters_http_server.models.HttpRequest
+import codecrafters_http_server.models.HttpVerb
+import codecrafters_http_server.models.HttpVersion
+import codecrafters_http_server.models.RequestLine
+import codecrafters_http_server.models.RequestHeader.USER_AGENT
 
 @main def main(): Unit = {
   val CRLF = "\r\n"
@@ -24,22 +30,26 @@ import codecrafters_http_server.StatusCode.OK
     val inputStream = clientSocket.getInputStream()
     val reader = new BufferedReader(new InputStreamReader(inputStream))
 
-    val request = Iterator
+    val rawRequest = Iterator
       .continually(reader.readLine())
       .takeWhile(it => it != null && it.nonEmpty)
       .toList
 
-    val Array(verb, path, httpVersion) = request.head.split(" ")
+    val request = HttpRequest.parse(rawRequest)
 
-    val headers = request.drop(1)
-    println(s"Headers: $headers")
+    println(s"Headers: ${request.headers}")
 
     val outputStream = clientSocket.getOutputStream()
 
-    val response = path match {
+    val response = request.line.path match {
       case "/"                               => HttpResponse(StatusCode.OK)
       case echo if echo.startsWith("/echo/") =>
         HttpResponse(StatusCode.OK, body = echo.stripPrefix("/echo/"))
+      case userAgent if userAgent.startsWith("/user-agent") =>
+        HttpResponse(
+          StatusCode.OK,
+          body = request.headers.getOrElse(USER_AGENT, "")
+        )
       case _ => HttpResponse(StatusCode.NOT_FOUND)
     }
 
