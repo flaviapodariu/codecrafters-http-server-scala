@@ -40,6 +40,7 @@ import codecrafters_http_server.StatusCode.OK
       case "/"                               => HttpResponse(StatusCode.OK)
       case echo if echo.startsWith("/echo/") =>
         HttpResponse(StatusCode.OK, body = echo.stripPrefix("/echo/"))
+      case _ => HttpResponse(StatusCode.NOT_FOUND)
     }
 
     outputStream.write(response.toBytes(HTTP_VERSION))
