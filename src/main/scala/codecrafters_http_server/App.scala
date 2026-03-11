@@ -1,7 +1,7 @@
 package codecrafters_http_server
 
 import java.io.IOException
-import java.net.ServerSocket
+import java.net.{ServerSocket, Socket}
 import java.io.InputStream
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -13,20 +13,34 @@ import codecrafters_http_server.models.HttpVersion
 import codecrafters_http_server.models.RequestLine
 import codecrafters_http_server.models.RequestHeader.USER_AGENT
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
+
 @main def main(): Unit = {
   val CRLF = "\r\n"
   val HTTP_VERSION = "HTTP/1.1"
+  val serverSocket = new ServerSocket(4221)
+  serverSocket.setReuseAddress(true)
 
-  try {
-    val serverSocket = new ServerSocket(4221)
-
-    serverSocket.setReuseAddress(true)
-
+  while (true) {
     val clientSocket = serverSocket.accept()
-
     println(
       s"accepted new connection from ${clientSocket.getChannel()}:${clientSocket.getPort()}"
     )
+
+    Future {
+      handleClient(HTTP_VERSION, clientSocket)
+    }.onComplete {
+      case Success(_) => println("OK")
+      case Failure(e) => println(s"Error handling client: ${e.getMessage}")
+    }
+  }
+
+}
+
+def handleClient(httpVersion: String, clientSocket: Socket): Unit = {
+  try {
     val inputStream = clientSocket.getInputStream()
     val reader = new BufferedReader(new InputStreamReader(inputStream))
 
@@ -36,8 +50,6 @@ import codecrafters_http_server.models.RequestHeader.USER_AGENT
       .toList
 
     val request = HttpRequest.parse(rawRequest)
-
-    println(s"Headers: ${request.headers}")
 
     val outputStream = clientSocket.getOutputStream()
 
@@ -52,11 +64,15 @@ import codecrafters_http_server.models.RequestHeader.USER_AGENT
         )
       case _ => HttpResponse(StatusCode.NOT_FOUND)
     }
-
-    outputStream.write(response.toBytes(HTTP_VERSION))
-
+    val responseBytes = response.toBytes(httpVersion)
+    outputStream.write(responseBytes)
+    outputStream.flush()
+    val a = String(responseBytes).replace("\r\n", "\\r\\n")
+    println(s"Response $a was sent to client on port ${clientSocket.getPort}")
   } catch {
     case e: IOException =>
       println(s"IOException: ${e.getMessage}")
+  } finally {
+      clientSocket.close()
   }
 }

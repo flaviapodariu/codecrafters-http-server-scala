@@ -8,7 +8,7 @@ object RepresentationHeader:
 
 opaque type RequestHeader = String
 object RequestHeader:
-  val HOST: RequestHeader = "content-type"
+  val HOST: RequestHeader = "host"
   val USER_AGENT: RequestHeader = "user-agent"
   val ACCEPT: RequestHeader = "accept"
   def fromString(s: String): RequestHeader = s

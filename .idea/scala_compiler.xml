@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ScalaCompilerConfiguration">
-    <profile name="sbt 1" modules="codecrafter-http-server,codecrafters-http-server,codecrafters-http-server-scala_49" />
+    <profile name="sbt 1" modules="codecrafter-http-server,codecrafters-http-server-scala_49" />
+    <profile name="sbt 2" modules="codecrafters-http-server">
+      <parameters>
+        <parameter value="-Xsemanticdb" />
+        <parameter value="-semanticdb-target" />
+        <parameter value="$PROJECT_DIR$/target/scala-3.7.4/meta" />
+      </parameters>
+    </profile>
   </component>
 </project>

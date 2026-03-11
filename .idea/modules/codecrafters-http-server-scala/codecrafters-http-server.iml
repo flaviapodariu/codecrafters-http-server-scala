@@ -11,10 +11,11 @@
       <sourceFolder url="file://$MODULE_DIR$/../../../src/main/scala" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/../../../target" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="temurin-23" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="sbt: scala-sdk-3.7.4" level="project" />
     <orderEntry type="library" name="sbt: org.scala-lang:scala3-library_3:3.7.4:jar" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="sbt: com.sourcegraph:semanticdb-javac:0.11.2:jar" level="project" />
     <orderEntry type="library" name="sbt: org.scala-lang:scala-library:2.13.16:jar" level="project" />
   </component>
 </module>
