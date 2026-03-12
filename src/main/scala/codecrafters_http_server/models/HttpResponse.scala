@@ -16,6 +16,12 @@ case class HttpResponse(
       .mkString(CRLF) + CRLF
 
     s"$statusLine$headerSection$CRLF$body".getBytes()
+
+  def withEncoding(encoding: Option[String]): HttpResponse =
+    encoding match
+      case Some(enc) if enc.contains(Encoding.GZIP.value) =>
+        copy(headers = headers + (Header.CONTENT_ENCODING -> enc))
+      case _ => this
 }
 
 opaque type StatusCode = String

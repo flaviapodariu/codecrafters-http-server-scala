@@ -1,7 +1,7 @@
 package codecrafters_http_server
 
-import codecrafters_http_server.models.Header.USER_AGENT
-import codecrafters_http_server.models.{Echo, Files, Home, HttpRequest, HttpResponse, Header, StatusCode, UserAgent}
+import codecrafters_http_server.models.Header.{ACCEPT_ENCODING, CONTENT_ENCODING, USER_AGENT}
+import codecrafters_http_server.models.{Echo, Files, Header, Home, HttpRequest, HttpResponse, StatusCode, UserAgent}
 
 import java.io.{BufferedReader, IOException, InputStreamReader}
 import java.net.{ServerSocket, Socket}
@@ -76,7 +76,9 @@ def handleClient(config: Map[String, String], httpVersion: String, clientSocket:
       case files if files.startsWith("/files/") => Files(config.getOrElse("directory", "."), files).execute(finalRequest)
       case _ => HttpResponse(StatusCode.NOT_FOUND)
     }
-    val responseBytes = response.toBytes(httpVersion)
+    val responseBytes = response
+      .withEncoding(finalRequest.headers.get(ACCEPT_ENCODING))
+      .toBytes(httpVersion)
 
     val outputStream = clientSocket.getOutputStream()
     outputStream.write(responseBytes)
