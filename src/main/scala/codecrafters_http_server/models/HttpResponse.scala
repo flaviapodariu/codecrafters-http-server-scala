@@ -17,11 +17,18 @@ case class HttpResponse(
 
     s"$statusLine$headerSection$CRLF$body".getBytes()
 
-  def withEncoding(encoding: Option[String]): HttpResponse =
-    encoding match
-      case Some(enc) if enc.contains(Encoding.GZIP.value) =>
-        copy(headers = headers + (Header.CONTENT_ENCODING -> enc))
-      case _ => this
+  def withEncoding(encodings: Option[String]): HttpResponse =
+    val clientEncodings = getSupportedEncodings(encodings)
+    val serverSupported = List(Encoding.GZIP)
+    val selectedEncoding = clientEncodings.find(enc => serverSupported.contains(enc))
+
+    selectedEncoding match {
+      case Some(enc) =>
+        copy(headers = headers + (Header.CONTENT_ENCODING -> enc.value))
+      case None =>
+        this
+    }
+
 }
 
 opaque type StatusCode = String
