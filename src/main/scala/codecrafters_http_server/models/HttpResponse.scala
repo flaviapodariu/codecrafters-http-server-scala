@@ -20,7 +20,7 @@ case class HttpResponse(
     val statusLine = s"$httpVersion $status$CRLF"
     val headerSection = buildHeaders()
       .map { case (k, v) => s"$k: $v" }
-      .mkString(CRLF)
+      .mkString(CRLF) + CRLF
 
     s"$statusLine$headerSection$CRLF$body".getBytes()
 }

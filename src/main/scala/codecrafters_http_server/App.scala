@@ -1,20 +1,12 @@
 package codecrafters_http_server
 
-import java.io.IOException
-import java.net.{ServerSocket, Socket}
-import java.io.InputStream
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import codecrafters_http_server.models.StatusCode
-import codecrafters_http_server.models.HttpResponse
-import codecrafters_http_server.models.HttpRequest
-import codecrafters_http_server.models.HttpVerb
-import codecrafters_http_server.models.HttpVersion
-import codecrafters_http_server.models.RequestLine
 import codecrafters_http_server.models.RequestHeader.USER_AGENT
+import codecrafters_http_server.models.{HttpRequest, HttpResponse, StatusCode}
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import java.io.{BufferedReader, IOException, InputStreamReader}
+import java.net.{ServerSocket, Socket}
+import java.util.concurrent.Executors
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 @main def main(): Unit = {
@@ -23,6 +15,11 @@ import scala.util.{Failure, Success}
   val serverSocket = new ServerSocket(4221)
   serverSocket.setReuseAddress(true)
 
+  val threadPoolSize = 32
+  given ec: ExecutionContext = ExecutionContext.fromExecutor(
+    Executors.newFixedThreadPool(threadPoolSize)
+  )
+  
   while (true) {
     val clientSocket = serverSocket.accept()
     println(
