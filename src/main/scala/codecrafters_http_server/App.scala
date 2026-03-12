@@ -1,7 +1,7 @@
 package codecrafters_http_server
 
-import codecrafters_http_server.models.RequestHeader.USER_AGENT
-import codecrafters_http_server.models.{HttpRequest, HttpResponse, StatusCode, UserAgent, Home, Echo, Files}
+import codecrafters_http_server.models.Header.USER_AGENT
+import codecrafters_http_server.models.{Echo, Files, Home, HttpRequest, HttpResponse, Header, StatusCode, UserAgent}
 
 import java.io.{BufferedReader, IOException, InputStreamReader}
 import java.net.{ServerSocket, Socket}
@@ -60,20 +60,30 @@ def handleClient(config: Map[String, String], httpVersion: String, clientSocket:
 
     val request = HttpRequest.parse(rawRequest)
 
-    val outputStream = clientSocket.getOutputStream()
+    val body = request.headers.get(Header.CONTENT_LENGTH) match
+      case Some(length) =>
+        val buffer = new Array[Char](length.toInt)
+        reader.read(buffer, 0, length.toInt)
+        String(buffer)
+      case None => ""
 
-    val response = request.line.path match {
-      case "/" => Home().execute(request)
-      case echo if echo.startsWith("/echo/") => Echo(echo).execute(request)
-      case userAgent if userAgent.startsWith("/user-agent") => UserAgent().execute(request)
-      case files if files.startsWith("/files/") => Files(config.getOrElse("directory", "."), files).execute(request)
+    val finalRequest = request.copy(body = body)
+
+    val response = finalRequest.line.path match {
+      case "/" => Home().execute(finalRequest)
+      case echo if echo.startsWith("/echo/") => Echo(echo).execute(finalRequest)
+      case userAgent if userAgent.startsWith("/user-agent") => UserAgent().execute(finalRequest)
+      case files if files.startsWith("/files/") => Files(config.getOrElse("directory", "."), files).execute(finalRequest)
       case _ => HttpResponse(StatusCode.NOT_FOUND)
     }
     val responseBytes = response.toBytes(httpVersion)
+
+    val outputStream = clientSocket.getOutputStream()
     outputStream.write(responseBytes)
     outputStream.flush()
-    val a = String(responseBytes).replace("\r\n", "\\r\\n")
-    println(s"Response $a was sent to client on port ${clientSocket.getPort}")
+
+    val debugBytes = String(responseBytes).replace("\r\n", "\\r\\n")
+    println(s"Response $debugBytes was sent to client on port ${clientSocket.getPort}")
   } catch {
     case e: IOException =>
       println(s"IOException: ${e.getMessage}")

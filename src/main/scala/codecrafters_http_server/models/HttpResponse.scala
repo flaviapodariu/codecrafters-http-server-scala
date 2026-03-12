@@ -1,14 +1,14 @@
 package codecrafters_http_server.models
-import codecrafters_http_server.models.RepresentationHeader
+import codecrafters_http_server.models.Header
 
 val CRLF = "\r\n"
 
 case class HttpResponse(
     status: StatusCode,
-    headers: Map[RepresentationHeader, String] = Map.empty,
+    headers: Map[Header, String] = Map.empty,
     body: String = ""
 ) {
-  
+
   def toBytes(httpVersion: String): Array[Byte] =
     val statusLine = s"$httpVersion $status$CRLF"
     val headerSection = headers
@@ -21,4 +21,6 @@ case class HttpResponse(
 opaque type StatusCode = String
 object StatusCode:
   val OK: StatusCode = "200 OK"
+  val CREATED: StatusCode = "201 Created"
   val NOT_FOUND: StatusCode = "404 Not Found"
+  val NOT_IMPLEMENTED: StatusCode = "501 Not Implemented"

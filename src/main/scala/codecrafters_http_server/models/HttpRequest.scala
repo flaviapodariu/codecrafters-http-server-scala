@@ -1,5 +1,5 @@
 package codecrafters_http_server.models
-import codecrafters_http_server.models.RequestHeader
+import codecrafters_http_server.models.Header
 
 case class RequestLine(
     verb: HttpVerb,
@@ -25,7 +25,7 @@ object HttpVersion:
 
 case class HttpRequest(
     line: RequestLine,
-    headers: Map[RequestHeader, String] = Map.empty,
+    headers: Map[Header, String] = Map.empty,
     body: String = ""
 )
 
@@ -42,7 +42,7 @@ object HttpRequest:
       .drop(1)
       .map(h => h.split(":", 2))
       .collect { case Array(k, v) =>
-        RequestHeader.fromString(k.toLowerCase()) -> v.strip()
+        Header.fromString(k.toLowerCase()) -> v.strip()
       }
       .toMap
 
