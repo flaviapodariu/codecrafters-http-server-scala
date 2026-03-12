@@ -3,6 +3,7 @@ package codecrafters_http_server.models
 import codecrafters_http_server.models
 import codecrafters_http_server.models.Header.USER_AGENT
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.{Path, Paths}
 
@@ -28,7 +29,7 @@ case class Echo(path: String) extends Endpoint:
             Header.CONTENT_TYPE -> "text/plain",
             Header.CONTENT_LENGTH -> message.length.toString
           ),
-          body = message
+          body = message.getBytes(StandardCharsets.UTF_8)
         )
       case _ => HttpResponse(StatusCode.NOT_IMPLEMENTED)
 
@@ -43,7 +44,7 @@ case class UserAgent() extends Endpoint:
             Header.CONTENT_TYPE -> "text/plain",
             Header.CONTENT_LENGTH -> ua.length.toString
           ),
-          body = ua
+          body = ua.getBytes
         )
       case _ => HttpResponse(StatusCode.NOT_IMPLEMENTED)
 
@@ -61,7 +62,7 @@ case class Files(directory: String, uriPath: String) extends Endpoint:
                 Header.CONTENT_TYPE -> "application/octet-stream",
                 Header.CONTENT_LENGTH -> size.toString
               ),
-              body = java.nio.file.Files.readString(file)
+              body = java.nio.file.Files.readString(file).getBytes
             )
 
           case None => HttpResponse(StatusCode.NOT_FOUND)

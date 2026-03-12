@@ -1,12 +1,16 @@
 package codecrafters_http_server.models
 import codecrafters_http_server.models.Header
 
+import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+
 val CRLF = "\r\n"
 
 case class HttpResponse(
     status: StatusCode,
     headers: Map[Header, String] = Map.empty,
-    body: String = ""
+    body: Array[Byte] = Array.empty
 ) {
 
   def toBytes(httpVersion: String): Array[Byte] =
@@ -15,7 +19,10 @@ case class HttpResponse(
       .map { case (k, v) => s"$k: $v" }
       .mkString(CRLF) + CRLF
 
-    s"$statusLine$headerSection$CRLF$body".getBytes()
+    val headerBytes = headerSection.getBytes(StandardCharsets.UTF_8)
+
+
+    s"$statusLine$headerSection$CRLF".getBytes() ++ body
 
   def withEncoding(encodings: Option[String]): HttpResponse =
     val clientEncodings = getSupportedEncodings(encodings)
@@ -23,8 +30,15 @@ case class HttpResponse(
     val selectedEncoding = clientEncodings.find(enc => serverSupported.contains(enc))
 
     selectedEncoding match {
-      case Some(enc) =>
-        copy(headers = headers + (Header.CONTENT_ENCODING -> enc.value))
+      case Some(Encoding.GZIP) =>
+        val compressed = gzip(body)
+        copy(
+          headers = headers + (
+            Header.CONTENT_ENCODING -> Encoding.GZIP.value,
+            Header.CONTENT_LENGTH -> compressed.length.toString
+            ),
+          body = compressed
+          )
       case None =>
         this
     }
