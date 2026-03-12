@@ -1,9 +1,7 @@
 package codecrafters_http_server.models
 import codecrafters_http_server.models.Header
 
-import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
-import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 val CRLF = "\r\n"
 
@@ -40,6 +38,11 @@ case class HttpResponse(
       case None =>
         this
     }
+    
+  def maybeCloseConnection(keepAlive: Boolean): HttpResponse =
+    if keepAlive then this else copy(headers = headers + (
+      Header.CONNECTION -> "close"
+    ))
 
 }
 

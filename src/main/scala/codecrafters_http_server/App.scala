@@ -101,8 +101,14 @@ def handleClient(
           Files(config.getOrElse("directory", "."), files).execute(finalRequest)
         case _ => HttpResponse(StatusCode.NOT_FOUND)
       }
+
+      finalRequest.headers.get(CONNECTION) match
+        case Some("close") => keepAlive = false
+        case None =>
+          
       val responseBytes = response
         .withEncoding(finalRequest.headers.get(ACCEPT_ENCODING))
+        .maybeCloseConnection(keepAlive)
         .toBytes(httpVersion)
 
       outputStream.write(responseBytes)
@@ -112,10 +118,7 @@ def handleClient(
       println(
         s"Response $debugBytes was sent to client on port ${clientSocket.getPort}"
       )
-
-      finalRequest.headers.get(CONNECTION) match
-        case Some("close") => keepAlive = false
-        case None          =>
+      
     }
   } catch {
     case e: IOException =>

@@ -4,7 +4,6 @@ import codecrafters_http_server.models
 import codecrafters_http_server.models.Header.USER_AGENT
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.attribute.FileAttribute
 import java.nio.file.{Path, Paths}
 
 trait Endpoint:
