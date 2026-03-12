@@ -15,12 +15,10 @@ case class HttpResponse(
 
   def toBytes(httpVersion: String): Array[Byte] =
     val statusLine = s"$httpVersion $status$CRLF"
-    val headerSection = headers
-      .map { case (k, v) => s"$k: $v" }
-      .mkString(CRLF) + CRLF
+    val headerSection = if (headers.isEmpty) ""
+    else headers.map { case (k, v) => s"$k: $v" }.mkString(CRLF) + CRLF
 
     val headerBytes = headerSection.getBytes(StandardCharsets.UTF_8)
-
 
     s"$statusLine$headerSection$CRLF".getBytes() ++ body
 

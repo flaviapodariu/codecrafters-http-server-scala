@@ -1,7 +1,21 @@
 package codecrafters_http_server
 
-import codecrafters_http_server.models.Header.{ACCEPT_ENCODING, CONTENT_ENCODING, USER_AGENT}
-import codecrafters_http_server.models.{Echo, Files, Header, Home, HttpRequest, HttpResponse, StatusCode, UserAgent}
+import codecrafters_http_server.models.Header.{
+  ACCEPT_ENCODING,
+  CONNECTION,
+  CONTENT_ENCODING,
+  USER_AGENT
+}
+import codecrafters_http_server.models.{
+  Echo,
+  Files,
+  Header,
+  Home,
+  HttpRequest,
+  HttpResponse,
+  StatusCode,
+  UserAgent
+}
 
 import java.io.{BufferedReader, IOException, InputStreamReader}
 import java.net.{ServerSocket, Socket}
@@ -31,7 +45,7 @@ def parseArgs(args: List[String]): Map[String, String] = {
   given ec: ExecutionContext = ExecutionContext.fromExecutor(
     Executors.newFixedThreadPool(threadPoolSize)
   )
-  
+
   while (true) {
     val clientSocket = serverSocket.accept()
     println(
@@ -48,48 +62,65 @@ def parseArgs(args: List[String]): Map[String, String] = {
 
 }
 
-def handleClient(config: Map[String, String], httpVersion: String, clientSocket: Socket): Unit = {
+def handleClient(
+    config: Map[String, String],
+    httpVersion: String,
+    clientSocket: Socket
+): Unit = {
   try {
     val inputStream = clientSocket.getInputStream()
+    val outputStream = clientSocket.getOutputStream()
     val reader = new BufferedReader(new InputStreamReader(inputStream))
 
-    val rawRequest = Iterator
-      .continually(reader.readLine())
-      .takeWhile(it => it != null && it.nonEmpty)
-      .toList
+    var keepAlive = true;
 
-    val request = HttpRequest.parse(rawRequest)
+    while (keepAlive) {
+      val rawRequest = Iterator
+        .continually(reader.readLine())
+        .takeWhile(it => it != null && it.nonEmpty)
+        .toList
 
-    val body = request.headers.get(Header.CONTENT_LENGTH) match
-      case Some(length) =>
-        val buffer = new Array[Char](length.toInt)
-        reader.read(buffer, 0, length.toInt)
-        String(buffer)
-      case None => ""
+      val request = HttpRequest.parse(rawRequest)
 
-    val finalRequest = request.copy(body = body)
+      val body = request.headers.get(Header.CONTENT_LENGTH) match
+        case Some(length) =>
+          val buffer = new Array[Char](length.toInt)
+          reader.read(buffer, 0, length.toInt)
+          String(buffer)
+        case None => ""
 
-    val response = finalRequest.line.path match {
-      case "/" => Home().execute(finalRequest)
-      case echo if echo.startsWith("/echo/") => Echo(echo).execute(finalRequest)
-      case userAgent if userAgent.startsWith("/user-agent") => UserAgent().execute(finalRequest)
-      case files if files.startsWith("/files/") => Files(config.getOrElse("directory", "."), files).execute(finalRequest)
-      case _ => HttpResponse(StatusCode.NOT_FOUND)
+      val finalRequest = request.copy(body = body)
+
+      val response = finalRequest.line.path match {
+        case "/"                               => Home().execute(finalRequest)
+        case echo if echo.startsWith("/echo/") =>
+          Echo(echo).execute(finalRequest)
+        case userAgent if userAgent.startsWith("/user-agent") =>
+          UserAgent().execute(finalRequest)
+        case files if files.startsWith("/files/") =>
+          Files(config.getOrElse("directory", "."), files).execute(finalRequest)
+        case _ => HttpResponse(StatusCode.NOT_FOUND)
+      }
+      val responseBytes = response
+        .withEncoding(finalRequest.headers.get(ACCEPT_ENCODING))
+        .toBytes(httpVersion)
+
+      outputStream.write(responseBytes)
+      outputStream.flush()
+
+      val debugBytes = String(responseBytes).replace("\r\n", "\\r\\n")
+      println(
+        s"Response $debugBytes was sent to client on port ${clientSocket.getPort}"
+      )
+
+      finalRequest.headers.get(CONNECTION) match
+        case Some("close") => keepAlive = false
+        case None          =>
     }
-    val responseBytes = response
-      .withEncoding(finalRequest.headers.get(ACCEPT_ENCODING))
-      .toBytes(httpVersion)
-
-    val outputStream = clientSocket.getOutputStream()
-    outputStream.write(responseBytes)
-    outputStream.flush()
-
-    val debugBytes = String(responseBytes).replace("\r\n", "\\r\\n")
-    println(s"Response $debugBytes was sent to client on port ${clientSocket.getPort}")
   } catch {
     case e: IOException =>
       println(s"IOException: ${e.getMessage}")
   } finally {
-      clientSocket.close()
+    clientSocket.close()
   }
 }

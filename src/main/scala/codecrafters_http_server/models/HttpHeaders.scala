@@ -9,4 +9,5 @@ object Header:
   val ACCEPT: Header = "accept"
   val ACCEPT_ENCODING: Header = "accept-encoding"
   val CONTENT_ENCODING: Header = "content-encoding"
+  val CONNECTION: Header = "connection"
   def fromString(s: String): Header = s
