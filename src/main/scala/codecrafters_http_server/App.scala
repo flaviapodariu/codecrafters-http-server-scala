@@ -1,7 +1,7 @@
 package codecrafters_http_server
 
 import codecrafters_http_server.models.RequestHeader.USER_AGENT
-import codecrafters_http_server.models.{HttpRequest, HttpResponse, StatusCode}
+import codecrafters_http_server.models.{HttpRequest, HttpResponse, StatusCode, UserAgent, Home, Echo, Files}
 
 import java.io.{BufferedReader, IOException, InputStreamReader}
 import java.net.{ServerSocket, Socket}
@@ -9,9 +9,21 @@ import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-@main def main(): Unit = {
-  val CRLF = "\r\n"
-  val HTTP_VERSION = "HTTP/1.1"
+val CRLF = "\r\n"
+val HTTP_VERSION = "HTTP/1.1"
+
+def parseArgs(args: List[String]): Map[String, String] = {
+  args match {
+    case "--directory" :: value :: tail =>
+      parseArgs(tail) + ("directory" -> value.strip())
+    case _ :: tail =>
+      parseArgs(tail)
+    case Nil => Map.empty
+  }
+}
+
+@main def main(args: String*): Unit = {
+  val config = parseArgs(args.toList)
   val serverSocket = new ServerSocket(4221)
   serverSocket.setReuseAddress(true)
 
@@ -27,7 +39,7 @@ import scala.util.{Failure, Success}
     )
 
     Future {
-      handleClient(HTTP_VERSION, clientSocket)
+      handleClient(config, HTTP_VERSION, clientSocket)
     }.onComplete {
       case Success(_) => println("OK")
       case Failure(e) => println(s"Error handling client: ${e.getMessage}")
@@ -36,7 +48,7 @@ import scala.util.{Failure, Success}
 
 }
 
-def handleClient(httpVersion: String, clientSocket: Socket): Unit = {
+def handleClient(config: Map[String, String], httpVersion: String, clientSocket: Socket): Unit = {
   try {
     val inputStream = clientSocket.getInputStream()
     val reader = new BufferedReader(new InputStreamReader(inputStream))
@@ -51,14 +63,10 @@ def handleClient(httpVersion: String, clientSocket: Socket): Unit = {
     val outputStream = clientSocket.getOutputStream()
 
     val response = request.line.path match {
-      case "/"                               => HttpResponse(StatusCode.OK)
-      case echo if echo.startsWith("/echo/") =>
-        HttpResponse(StatusCode.OK, body = echo.stripPrefix("/echo/"))
-      case userAgent if userAgent.startsWith("/user-agent") =>
-        HttpResponse(
-          StatusCode.OK,
-          body = request.headers.getOrElse(USER_AGENT, "")
-        )
+      case "/" => Home().execute(request)
+      case echo if echo.startsWith("/echo/") => Echo(echo).execute(request)
+      case userAgent if userAgent.startsWith("/user-agent") => UserAgent().execute(request)
+      case files if files.startsWith("/files/") => Files(config.getOrElse("directory", "."), files).execute(request)
       case _ => HttpResponse(StatusCode.NOT_FOUND)
     }
     val responseBytes = response.toBytes(httpVersion)

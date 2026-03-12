@@ -8,17 +8,10 @@ case class HttpResponse(
     headers: Map[RepresentationHeader, String] = Map.empty,
     body: String = ""
 ) {
-  def buildHeaders(): Map[RepresentationHeader, String] =
-    if (body.nonEmpty) {
-      headers + (
-        RepresentationHeader.CONTENT_TYPE -> "text/plain",
-        RepresentationHeader.CONTENT_LENGTH -> body.length.toString
-      )
-    } else headers
-
+  
   def toBytes(httpVersion: String): Array[Byte] =
     val statusLine = s"$httpVersion $status$CRLF"
-    val headerSection = buildHeaders()
+    val headerSection = headers
       .map { case (k, v) => s"$k: $v" }
       .mkString(CRLF) + CRLF
 
